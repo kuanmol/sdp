@@ -6,65 +6,48 @@ from PIL import ImageFile
 
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 
-# Load the trained model
 cnn = tf.keras.models.load_model('my_image_classifier_model.keras')
 
-# Start the camera
-cap = cv2.VideoCapture(0)  # Use the first camera (usually the default laptop camera)
-
-# Set camera frame width and height
+cap = cv2.VideoCapture(0)
 cap.set(3, 640)  # Width
 cap.set(4, 480)  # Height
 
 while True:
-    # Capture frame-by-frame
     ret, frame = cap.read()
 
-    # Display the resulting frame
     cv2.imshow('Camera', frame)
 
-    # Wait for user to press 'c' to capture an image for prediction
     key = cv2.waitKey(1) & 0xFF
-    if key == ord('c'):  # Capture image when 'c' is pressed
-        # Preprocess the captured image
-        test_image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)  # Convert color format
-        test_image_resized = cv2.resize(test_image, (128, 128))  # Resize to match the input size
+    if key == ord('c'):
+        test_image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        test_image_resized = cv2.resize(test_image, (128, 128))
         test_image_resized = image.img_to_array(test_image_resized)
         test_image_resized = np.expand_dims(test_image_resized, axis=0)
 
-        # Normalize the image to match training data
-        test_image_resized = test_image_resized / 255.0  # Rescale pixel values to [0, 1]
+        test_image_resized = test_image_resized / 255.0
 
-        # Make a prediction
         result = cnn.predict(test_image_resized)
 
         class_index = np.argmax(result[0])
 
-        # Class labels
         class_labels = {0: 'cat', 1: 'dog', 2: 'human'}
 
         # Display the prediction
         prediction = class_labels[class_index]
         print(f"Prediction: {prediction}")
 
-        # Get bounding box coordinates (assuming you're detecting faces or objects)
         h, w, _ = frame.shape
-        top_left = (50, 50)  # Example coordinates for bounding box start (top-left corner)
-        bottom_right = (w - 50, h - 50)  # Example coordinates for bottom-right corner
+        top_left = (50, 50)
+        bottom_right = (w - 50, h - 50)
 
-        # Draw bounding box (you can adjust the coordinates as needed)
         cv2.rectangle(frame, top_left, bottom_right, (0, 255, 0), 2)
 
-        # Add the class label to the bounding box
         label_position = (top_left[0], top_left[1] - 10)
         cv2.putText(frame, prediction, label_position, cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 255, 0), 2)
 
-        # Display the frame with the bounding box
         cv2.imshow('Camera with Bounding Box', frame)
 
-        # Break the loop after prediction
         break
 
-# Release the camera and close the window
 cap.release()
 cv2.destroyAllWindows()

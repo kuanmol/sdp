@@ -52,9 +52,9 @@ model = Sequential([
     base_model,
     GlobalAveragePooling2D(),
     Dense(256, activation='relu'),
-    Dropout(0.5),  # Dropout to prevent overfitting
+    Dropout(0.5),
     Dense(128, activation='relu'),
-    Dropout(0.5),  # Dropout to prevent overfitting
+    Dropout(0.5),
     Dense(3, activation='softmax')  # Output layer for 3 classes
 ])
 

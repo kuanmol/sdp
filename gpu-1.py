@@ -8,7 +8,7 @@ from keras_preprocessing.image import ImageDataGenerator
 loaded_model = load_model('my_image_classifier_model.keras')  # Or 'my_image_classifier_model.h5'
 
 # Use the loaded model for predictions
-test_image = image.load_img('img_10.png', target_size=(128, 128))
+test_image = image.load_img('img_11.png', target_size=(128, 128))
 test_image = image.img_to_array(test_image)
 test_image = np.expand_dims(test_image, axis=0)
 test_image = test_image / 255.0  # Rescale the image
