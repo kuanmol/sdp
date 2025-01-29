@@ -1,96 +1,49 @@
-import tensorflow as tf
-from keras.api import layers, models
-from keras_preprocessing.image import ImageDataGenerator
-
-
-from sklearn.utils import class_weight
 import numpy as np
+import tensorflow as tf
+from keras_preprocessing import image
+from keras_preprocessing.image import ImageDataGenerator
+from PIL import ImageFile
 
-# Assuming your training labels are 0 for humans and 1 for dogs
-class_weights = class_weight.compute_class_weight(
-    'balanced',
-    classes=np.unique(train_generator.classes),
-    y=train_generator.classes
-)
-class_weights = dict(enumerate(class_weights))
+ImageFile.LOAD_TRUNCATED_IMAGES = True
 
-# Define the CNN model
-def create_cnn_model(input_shape):
-    model = models.Sequential([
-        layers.Conv2D(32, (3, 3), activation='relu', input_shape=(150, 150, 3)),
-        layers.MaxPooling2D((2, 2)),
-        layers.Conv2D(64, (3, 3), activation='relu'),
-        layers.MaxPooling2D((2, 2)),
-        layers.Conv2D(128, (3, 3), activation='relu'),
-        layers.MaxPooling2D((2, 2)),
-        layers.Flatten(),
-        layers.Dense(512, activation='relu'),
-        layers.Dropout(0.5),
-        layers.Dense(1, activation='sigmoid')
-    ])
+# Data Augmentation for training
+train_datagen = ImageDataGenerator(rescale=1. / 255,
+                                   shear_range=0.2,
+                                   zoom_range=0.2,
+                                   horizontal_flip=True)
 
-    return model
+training_set = train_datagen.flow_from_directory('dataset/train', target_size=(64, 64),
+                                                 batch_size=32, class_mode='categorical')
 
+test_datagen = ImageDataGenerator(rescale=1. / 255)
+test_set = test_datagen.flow_from_directory('dataset/test', target_size=(64, 64),
+                                            batch_size=32, class_mode='categorical')
 
-# Compile the model
-def compile_model(model):
-    model.compile(optimizer='adam',
-                  loss='binary_crossentropy',
-                  metrics=['accuracy'])
+# CNN Model Architecture
+cnn = tf.keras.models.Sequential()
+cnn.add(tf.keras.layers.Conv2D(filters=32, kernel_size=3, activation='relu', input_shape=[64, 64, 3]))
+cnn.add(tf.keras.layers.MaxPool2D(pool_size=2, strides=2))
+cnn.add(tf.keras.layers.Conv2D(filters=32, kernel_size=3, activation='relu'))
+cnn.add(tf.keras.layers.MaxPool2D(pool_size=2, strides=2))
+cnn.add(tf.keras.layers.Flatten())
+cnn.add(tf.keras.layers.Dense(units=128, activation='relu'))
+cnn.add(tf.keras.layers.Dense(units=3, activation='softmax'))
 
+cnn.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
 
-# Prepare the data
-def prepare_data(train_dir, validation_dir, target_size, batch_size):
-    train_datagen = ImageDataGenerator(rescale=1. / 255)
-    validation_datagen = ImageDataGenerator(rescale=1. / 255)
+# Train the model
+cnn.fit(x=training_set, validation_data=test_set, epochs=5)
 
-    train_generator = train_datagen.flow_from_directory(
-        train_dir,
-        target_size=target_size,
-        batch_size=batch_size,
-        class_mode='binary'
-    )
+# Predicting a single image
+test_image = image.load_img('00000800_006.jpg', target_size=(64, 64))
+test_image = image.img_to_array(test_image)
+test_image = np.expand_dims(test_image, axis=0)
 
-    validation_generator = validation_datagen.flow_from_directory(
-        validation_dir,
-        target_size=target_size,
-        batch_size=batch_size,
-        class_mode='binary'
-    )
+result = cnn.predict(test_image)
 
-    return train_generator, validation_generator
+# Map the predicted class index to class name
+class_index = np.argmax(result[0])  # Index of the highest probability
+class_labels = {0: 'cat', 1: 'dog', 2: 'human'}
 
-
-# Main function
-def main():
-    # Define directories
-    train_dir = 'path/to/train_data'
-    validation_dir = 'path/to/validation_data'
-
-    # Define image dimensions and batch size
-    img_width, img_height = 150, 150
-    input_shape = (img_width, img_height, 3)
-    batch_size = 32
-
-    # Prepare data
-    train_generator, validation_generator = prepare_data(train_dir, validation_dir, (img_width, img_height), batch_size)
-
-    # Create and compile the model
-    model = create_cnn_model(input_shape)
-    compile_model(model)
-
-    # Train the model
-    history = model.fit(
-        train_generator,
-        steps_per_epoch=train_generator.samples // batch_size,
-        epochs=10,
-        validation_data=validation_generator,
-        validation_steps=validation_generator.samples // batch_size
-    )
-
-    # Save the model
-    model.save('dog_vs_human_model.h5')
-
-
-if __name__ == "__main__":
-    main()
+prediction = class_labels[class_index]
+print(prediction)
