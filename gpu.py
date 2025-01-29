@@ -2,44 +2,97 @@ import numpy as np
 import tensorflow as tf
 from keras_preprocessing import image
 from keras_preprocessing.image import ImageDataGenerator
+from keras.api.layers import Dense, GlobalAveragePooling2D, Dropout
+from keras.api.models import Sequential
+from keras.api.applications import VGG16
+from keras.api.callbacks import EarlyStopping
 from PIL import ImageFile
 
+# Allow truncated images to be loaded
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 
-train_datagen = ImageDataGenerator(rescale=1. / 255,
-                                   shear_range=0.2,
-                                   zoom_range=0.2,
-                                   horizontal_flip=True)
+# Data Augmentation for Training Data
+train_datagen = ImageDataGenerator(
+    rescale=1. / 255,
+    rotation_range=20,
+    width_shift_range=0.2,
+    height_shift_range=0.2,
+    shear_range=0.2,
+    zoom_range=0.2,
+    horizontal_flip=True,
+    brightness_range=[0.8, 1.2],
+    fill_mode='nearest'
+)
 
-training_set = train_datagen.flow_from_directory('dataset/train', target_size=(64, 64),
-                                                 batch_size=32, class_mode='binary')
-
+# Rescale Testing Data (No Augmentation)
 test_datagen = ImageDataGenerator(rescale=1. / 255)
-test_set = test_datagen.flow_from_directory('dataset/test',
-                                            target_size=(64, 64),
-                                            batch_size=32,
-                                            class_mode='binary')
 
-cnn = tf.keras.models.Sequential()
+# Load Training Data
+training_set = train_datagen.flow_from_directory(
+    'dataset/train',
+    target_size=(128, 128),  # Increased image size
+    batch_size=32,
+    class_mode='categorical'
+)
 
-cnn.add(tf.keras.layers.Conv2D(filters=32, kernel_size=3, activation='relu', input_shape=[64, 64, 3]))
-cnn.add(tf.keras.layers.MaxPool2D(pool_size=2, strides=2))
-cnn.add(tf.keras.layers.Conv2D(filters=32, kernel_size=3, activation='relu'))
-cnn.add(tf.keras.layers.MaxPool2D(pool_size=2, strides=2))
-cnn.add(tf.keras.layers.Flatten())
-cnn.add(tf.keras.layers.Dense(units=128, activation='relu'))
-cnn.add(tf.keras.layers.Dense(units=1, activation='sigmoid'))
-cnn.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
-cnn.fit(x=training_set, validation_data=test_set, epochs=5)
+# Load Testing Data
+test_set = test_datagen.flow_from_directory(
+    'dataset/test',
+    target_size=(128, 128),  # Increased image size
+    batch_size=32,
+    class_mode='categorical'
+)
 
-test_image = image.load_img('dogImages/dogImages/test/043.Canaan_dog/Canaan_dog_03066.jpg', target_size=(64, 64))
+# Transfer Learning with VGG16
+base_model = VGG16(weights='imagenet', include_top=False, input_shape=(128, 128, 3))
+base_model.trainable = False  # Freeze the base model
+
+# Build the Model
+model = Sequential([
+    base_model,
+    GlobalAveragePooling2D(),
+    Dense(256, activation='relu'),
+    Dropout(0.5),  # Dropout to prevent overfitting
+    Dense(128, activation='relu'),
+    Dropout(0.5),  # Dropout to prevent overfitting
+    Dense(3, activation='softmax')  # Output layer for 3 classes
+])
+
+# Compile the Model
+model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=0.0001),  # Lower learning rate
+              loss='categorical_crossentropy',
+              metrics=['accuracy'])
+
+# Early Stopping to Prevent Overfitting
+early_stopping = EarlyStopping(
+    monitor='val_accuracy',
+    patience=5,
+    restore_best_weights=True
+)
+
+# Train the Model
+history = model.fit(
+    training_set,
+    validation_data=test_set,
+    epochs=4,  # Increase epochs
+    callbacks=[early_stopping]
+)
+
+# Evaluate the Model
+test_loss, test_accuracy = model.evaluate(test_set)
+print(f"Test Accuracy: {test_accuracy * 100:.2f}%")
+
+# Make a Prediction on a Single Image
+test_image = image.load_img('img.png', target_size=(128, 128))
 test_image = image.img_to_array(test_image)
 test_image = np.expand_dims(test_image, axis=0)
-result = cnn.predict(test_image)
-training_set.class_indices
-if result[0][0] == 1:
-    prediction = 'human'
-else:
-    prediction = 'dog'
+test_image = test_image / 255.0  # Rescale the image
 
-print(prediction)
+result = model.predict(test_image)
+class_index = np.argmax(result[0])
+class_labels = {0: 'cat', 1: 'dog', 2: 'human'}
+prediction = class_labels[class_index]
+print(f"Prediction: {prediction}")
+
+# Save the entire model to a file
+model.save('my_image_classifier_model.keras')  # Recommended format for Keras models
