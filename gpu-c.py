@@ -37,6 +37,7 @@ while True:
 
         # Make a prediction
         result = cnn.predict(test_image_resized)
+
         class_index = np.argmax(result[0])
 
         # Class labels
