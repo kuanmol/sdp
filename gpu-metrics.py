@@ -1,4 +1,3 @@
-
 from keras.api.models import load_model
 from keras_preprocessing.image import ImageDataGenerator
 
@@ -29,12 +28,9 @@ from sklearn.metrics import classification_report
 # Get true labels
 y_true = test_generator.classes  # True class labels
 
-# Get predicted labels
 y_pred_probs = loaded_model.predict(test_generator)  # Predicted probabilities
 y_pred = np.argmax(y_pred_probs, axis=1)  # Convert probabilities to class indices
 
-# Get class labels
 class_labels = list(test_generator.class_indices.keys())
 
-# Print classification report
 print(classification_report(y_true, y_pred, target_names=class_labels))
