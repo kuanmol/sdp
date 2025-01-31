@@ -6,7 +6,7 @@ from PIL import ImageFile
 
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 
-# Load the trained model
+# Load the trained model (replace with the path to your model)
 cnn = tf.keras.models.load_model('my_image_classifier_model.keras')
 
 # Initialize the camera
@@ -28,7 +28,7 @@ while True:
         test_image_resized = cv2.resize(test_image, (128, 128))
         test_image_resized = image.img_to_array(test_image_resized)
         test_image_resized = np.expand_dims(test_image_resized, axis=0)
-        test_image_resized = test_image_resized / 255.0
+        test_image_resized = test_image_resized / 255.0  # Rescale the image
 
         # Predict the class of the captured image
         result = cnn.predict(test_image_resized)
