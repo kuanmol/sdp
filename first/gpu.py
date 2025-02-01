@@ -83,7 +83,7 @@ test_loss, test_accuracy = model.evaluate(test_set)
 print(f"Test Accuracy: {test_accuracy * 100:.2f}%")
 
 # Make a Prediction on a Single Image
-test_image = image.load_img('img.png', target_size=(128, 128))
+test_image = image.load_img('../test/img.png', target_size=(128, 128))
 test_image = image.img_to_array(test_image)
 test_image = np.expand_dims(test_image, axis=0)
 test_image = test_image / 255.0  # Rescale the image
