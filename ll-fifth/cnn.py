@@ -104,7 +104,7 @@ lr_callback = LearningRateScheduler(lr_scheduler)
 history = model.fit(
     training_set,
     validation_data=test_set,
-    epochs=2,  # Increased epochs
+    epochs=2,
     callbacks=[early_stopping, reduce_lr, lr_callback],
     class_weight=class_weights  # Added class weights
 )
@@ -129,7 +129,7 @@ model.compile(
 history_fine = model.fit(
     training_set,
     validation_data=test_set,
-    epochs=1,  # Fine-tune for 10 more epochs
+    epochs=1,
     callbacks=[early_stopping, reduce_lr, lr_callback],
     class_weight=class_weights
 )
