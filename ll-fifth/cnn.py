@@ -6,6 +6,7 @@ from keras.api.layers import Dense, GlobalAveragePooling2D, Dropout
 from keras.api.models import Sequential
 from keras.api.applications import VGG16
 from keras.api.callbacks import EarlyStopping, ReduceLROnPlateau, LearningRateScheduler
+from keras.api.optimizers import Adam
 from sklearn.utils import class_weight
 from PIL import ImageFile
 
@@ -120,7 +121,7 @@ for layer in base_model.layers[:-10]:  # Unfreeze the last 10 layers
 
 # Recompile the model with a lower learning rate
 model.compile(
-    optimizer=tf.keras.optimizers.Adam(learning_rate=1e-5),  # Very low learning rate for fine-tuning
+    optimizer=Adam(learning_rate=1e-5),  # Very low learning rate for fine-tuning
     loss='categorical_crossentropy',
     metrics=['accuracy']
 )
