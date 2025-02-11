@@ -1,15 +1,12 @@
 from keras.api.models import load_model
 from keras_preprocessing.image import ImageDataGenerator
 
-# Load the trained model
 loaded_model = load_model('my_image_classifier_model_finetuned.keras')
 
-# Create an ImageDataGenerator for the test set
 test_datagen = ImageDataGenerator(rescale=1.0 / 255.0)
 
-# Load test dataset from a directory
 test_generator = test_datagen.flow_from_directory(
-    r'D:\sdp\ll-first\dataset\test',  # Replace with the actual path
+    r'D:\sdp\ll-first\dataset\test',
     target_size=(150, 150),
     batch_size=32,
     class_mode='categorical',
@@ -25,11 +22,10 @@ print(f"Loss: {loss:.4f}")
 import numpy as np
 from sklearn.metrics import classification_report
 
-# Get true labels
-y_true = test_generator.classes  # True class labels
+y_true = test_generator.classes
 
-y_pred_probs = loaded_model.predict(test_generator)  # Predicted probabilities
-y_pred = np.argmax(y_pred_probs, axis=1)  # Convert probabilities to class indices
+y_pred_probs = loaded_model.predict(test_generator)
+y_pred = np.argmax(y_pred_probs, axis=1)
 
 class_labels = list(test_generator.class_indices.keys())
 

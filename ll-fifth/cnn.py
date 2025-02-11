@@ -10,30 +10,26 @@ from keras.api.optimizers import Adam
 from sklearn.utils import class_weight
 from PIL import ImageFile
 
-# Allow truncated images to be loaded
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 
-# Data Augmentation for Training Data
 train_datagen = ImageDataGenerator(
     rescale=1. / 255,
-    rotation_range=40,  # Increased rotation range
+    rotation_range=40,
     width_shift_range=0.2,
     height_shift_range=0.2,
     shear_range=0.2,
     zoom_range=0.2,
     horizontal_flip=True,
-    vertical_flip=True,  # Added vertical flip
+    vertical_flip=True,
     brightness_range=[0.8, 1.2],
     fill_mode='nearest'
 )
 
-# Rescale Testing Data (No Augmentation)
 test_datagen = ImageDataGenerator(rescale=1. / 255)
 
-# Load Training Data
 training_set = train_datagen.flow_from_directory(
     r"C:\Users\anmol\OneDrive\Desktop\sdp\power\dataset\training",
-    target_size=(150, 150),  # Increased image size to 150x150
+    target_size=(150, 150),
     batch_size=32,
     class_mode='categorical'
 )
@@ -41,7 +37,7 @@ training_set = train_datagen.flow_from_directory(
 # Load Testing Data
 test_set = test_datagen.flow_from_directory(
     r"C:\Users\anmol\OneDrive\Desktop\sdp\power\dataset\test",
-    target_size=(150, 150),  # Increased image size to 150x150
+    target_size=(150, 150),
     batch_size=32,
     class_mode='categorical'
 )
@@ -58,28 +54,26 @@ class_weights = dict(enumerate(class_weights))
 base_model = VGG16(weights='imagenet', include_top=False, input_shape=(150, 150, 3))
 base_model.trainable = False  # Freeze the base model
 
-# Build the Model
 model = Sequential([
     base_model,
     GlobalAveragePooling2D(),
-    Dense(512, activation='relu'),  # Increased neurons in the dense layer
+    Dense(512, activation='relu'),
     Dropout(0.5),
-    Dense(256, activation='relu'),  # Added another dense layer
+    Dense(256, activation='relu'),
     Dropout(0.5),
-    Dense(3, activation='softmax')  # Output layer for 3 classes
+    Dense(3, activation='softmax')
 ])
 
 # Compile the Model
 model.compile(
-    optimizer=tf.keras.optimizers.Adam(learning_rate=0.0001),  # Lower learning rate
+    optimizer=tf.keras.optimizers.Adam(learning_rate=0.0001),
     loss='categorical_crossentropy',
     metrics=['accuracy']
 )
 
-# Callbacks
 early_stopping = EarlyStopping(
     monitor='val_accuracy',
-    patience=10,  # Increased patience
+    patience=10,
     restore_best_weights=True
 )
 
@@ -135,18 +129,15 @@ history_fine = model.fit(
     class_weight=class_weights
 )
 
-model.save('my_image_classifier_model_finetuned.keras')  # Recommended format for Keras models
+model.save('my_image_classifier_model_finetuned.keras')
 
-# Make a Prediction on a Single Image
 test_image = image.load_img('img_1.png', target_size=(150, 150))
 test_image = image.img_to_array(test_image)
 test_image = np.expand_dims(test_image, axis=0)
-test_image = test_image / 255.0  # Rescale the image
+test_image = test_image / 255.0
 
 result = model.predict(test_image)
 class_index = np.argmax(result[0])
 class_labels = {0: 'cat', 1: 'dog', 2: 'human'}
 prediction = class_labels[class_index]
 print(f"Prediction: {prediction}")
-
-# Save the entire model to a file
