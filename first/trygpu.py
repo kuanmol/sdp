@@ -10,6 +10,15 @@ from PIL import ImageFile
 
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 
+# Set memory growth for GPUs to avoid memory allocation errors
+physical_devices = tf.config.list_physical_devices('GPU')
+for device in physical_devices:
+    tf.config.experimental.set_memory_growth(device, True)
+
+# Check if GPU is available
+print("GPUs available:", tf.config.list_physical_devices('GPU'))
+
+# Data Augmentation and Preprocessing
 train_datagen = ImageDataGenerator(
     rescale=1. / 255,
     rotation_range=20,
@@ -27,7 +36,7 @@ test_datagen = ImageDataGenerator(rescale=1. / 255)
 
 # Load Training Data
 training_set = train_datagen.flow_from_directory(
-    'dataset/train',
+    '/workspace/first/dataset/train',
     target_size=(128, 128),  # Increased image size
     batch_size=32,
     class_mode='categorical'
@@ -35,7 +44,7 @@ training_set = train_datagen.flow_from_directory(
 
 # Load Testing Data
 test_set = test_datagen.flow_from_directory(
-    'dataset/test',
+    '/workspace/first/dataset/test',
     target_size=(128, 128),  # Increased image size
     batch_size=32,
     class_mode='categorical'

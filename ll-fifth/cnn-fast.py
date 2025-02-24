@@ -12,6 +12,18 @@ from PIL import ImageFile
 
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 
+# Ensure TensorFlow uses GPU
+gpus = tf.config.list_physical_devices('GPU')
+if gpus:
+    try:
+        for gpu in gpus:
+            tf.config.experimental.set_memory_growth(gpu, True)
+        print("GPUs available:", gpus)
+    except RuntimeError as e:
+        print(e)
+else:
+    print("No GPU found. Using CPU.")
+
 train_datagen = ImageDataGenerator(
     rescale=1. / 255,
     rotation_range=40,
@@ -28,19 +40,20 @@ train_datagen = ImageDataGenerator(
 test_datagen = ImageDataGenerator(rescale=1. / 255)
 
 training_set = train_datagen.flow_from_directory(
-    r"D:\sdp\ll-first\dataset\training",
+    r"/workspace/ll-first/dataset/training",
     target_size=(150, 150),
     batch_size=32,
-    class_mode='categorical'
+    class_mode='categorical',
 )
 
-# Load Testing Data
 test_set = test_datagen.flow_from_directory(
-    r"D:\sdp\ll-first\dataset\test",
+    r"/workspace/ll-first/dataset/test",
     target_size=(150, 150),
     batch_size=32,
-    class_mode='categorical'
+    class_mode='categorical',
 )
+print(training_set.class_indices)
+print(test_set.class_indices)
 
 # Compute class weights to handle class imbalance
 class_weights = class_weight.compute_class_weight(
@@ -49,27 +62,34 @@ class_weights = class_weight.compute_class_weight(
     y=training_set.classes
 )
 class_weights = dict(enumerate(class_weights))
+batch = next(iter(training_set))  # Fetch one batch
+print(f"Batch Length: {len(batch)}")  # Should be 2
+print(f"Labels Shape: {batch[1].shape}")  # Should be (batch_size, num_classes)
+print(f"Images Shape: {batch[0].shape}")  # Should be (batch_size, 150, 150, 3)
 
 # Transfer Learning with VGG16
-base_model = VGG16(weights='imagenet', include_top=False, input_shape=(150, 150, 3))
-base_model.trainable = False  # Freeze the base model
+strategy = tf.distribute.MirroredStrategy()  # Enables multi-GPU support
 
-model = Sequential([
-    base_model,
-    GlobalAveragePooling2D(),
-    Dense(512, activation='relu'),
-    Dropout(0.5),
-    Dense(256, activation='relu'),
-    Dropout(0.5),
-    Dense(3, activation='softmax')
-])
+with strategy.scope():
+    base_model = VGG16(weights='imagenet', include_top=False, input_shape=(150, 150, 3))
+    base_model.trainable = False  # Freeze the base model
 
-# Compile the Model
-model.compile(
-    optimizer=tf.keras.optimizers.Adam(learning_rate=0.0001),
-    loss='categorical_crossentropy',
-    metrics=['accuracy']
-)
+    model = Sequential([
+        base_model,
+        GlobalAveragePooling2D(),
+        Dense(512, activation='relu'),
+        Dropout(0.5),
+        Dense(256, activation='relu'),
+        Dropout(0.5),
+        Dense(3, activation='softmax')
+    ])
+
+    # Compile the Model
+    model.compile(
+        optimizer=Adam(learning_rate=0.0001),
+        loss='categorical_crossentropy',
+        metrics=['accuracy']
+    )
 
 early_stopping = EarlyStopping(
     monitor='val_accuracy',
@@ -84,14 +104,12 @@ reduce_lr = ReduceLROnPlateau(
     min_lr=0.00001  # Minimum learning rate
 )
 
-
 # Learning rate scheduler
 def lr_scheduler(epoch, lr):
     if epoch < 10:
         return lr
     else:
         return lr * tf.math.exp(-0.1)
-
 
 lr_callback = LearningRateScheduler(lr_scheduler)
 
@@ -114,11 +132,12 @@ for layer in base_model.layers[:-10]:  # Unfreeze the last 10 layers
     layer.trainable = False
 
 # Recompile the model with a lower learning rate
-model.compile(
-    optimizer=Adam(learning_rate=1e-5),  # Very low learning rate for fine-tuning
-    loss='categorical_crossentropy',
-    metrics=['accuracy']
-)
+with strategy.scope():
+    model.compile(
+        optimizer=Adam(learning_rate=1e-5),  # Very low learning rate for fine-tuning
+        loss='categorical_crossentropy',
+        metrics=['accuracy']
+    )
 
 # Train the model again (Fine-Tuning)
 history_fine = model.fit(
