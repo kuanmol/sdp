@@ -36,7 +36,7 @@ test_datagen = ImageDataGenerator(rescale=1. / 255)
 
 # Load Training Data
 training_set = train_datagen.flow_from_directory(
-    '/workspace/first/dataset/train',
+    '/workspace/sdp/first/dataset/train',
     target_size=(128, 128),  # Increased image size
     batch_size=32,
     class_mode='categorical'
@@ -44,7 +44,7 @@ training_set = train_datagen.flow_from_directory(
 
 # Load Testing Data
 test_set = test_datagen.flow_from_directory(
-    '/workspace/first/dataset/test',
+    '/workspace/sdp/first/dataset/test',
     target_size=(128, 128),  # Increased image size
     batch_size=32,
     class_mode='categorical'
@@ -102,4 +102,4 @@ prediction = class_labels[class_index]
 print(f"Prediction: {prediction}")
 
 # Save the entire model to a file
-model.save('my_image_classifier_model.keras')  # Recommended format for Keras models
+model.save('my_image_classifier_model1.keras')  # Recommended format for Keras models

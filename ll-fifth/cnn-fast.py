@@ -10,9 +10,10 @@ from keras.api.optimizers import Adam
 from sklearn.utils import class_weight
 from PIL import ImageFile
 
+# Enable loading truncated images
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 
-# Ensure TensorFlow uses GPU
+# Set up GPU configuration
 gpus = tf.config.list_physical_devices('GPU')
 if gpus:
     try:
@@ -24,6 +25,11 @@ if gpus:
 else:
     print("No GPU found. Using CPU.")
 
+# Define paths
+train_dir = r"/workspace/sdp/ll-first/dataset/training"
+test_dir = r"/workspace/sdp/ll-first/dataset/test"
+
+# Data augmentation and preprocessing
 train_datagen = ImageDataGenerator(
     rescale=1. / 255,
     rotation_range=40,
@@ -39,21 +45,28 @@ train_datagen = ImageDataGenerator(
 
 test_datagen = ImageDataGenerator(rescale=1. / 255)
 
+# Load training data
 training_set = train_datagen.flow_from_directory(
-    r"/workspace/ll-first/dataset/training",
+    train_dir,
     target_size=(150, 150),
     batch_size=32,
-    class_mode='categorical',
+    class_mode='categorical'
 )
 
+# Load testing data
 test_set = test_datagen.flow_from_directory(
-    r"/workspace/ll-first/dataset/test",
+    test_dir,
     target_size=(150, 150),
     batch_size=32,
-    class_mode='categorical',
+    class_mode='categorical'
 )
-print(training_set.class_indices)
-print(test_set.class_indices)
+
+# Debugging: Check the output of the generator
+for batch in training_set:
+    images, labels = batch
+    print("Images shape:", images.shape)
+    print("Labels shape:", labels.shape)
+    break
 
 # Compute class weights to handle class imbalance
 class_weights = class_weight.compute_class_weight(
@@ -62,35 +75,30 @@ class_weights = class_weight.compute_class_weight(
     y=training_set.classes
 )
 class_weights = dict(enumerate(class_weights))
-batch = next(iter(training_set))  # Fetch one batch
-print(f"Batch Length: {len(batch)}")  # Should be 2
-print(f"Labels Shape: {batch[1].shape}")  # Should be (batch_size, num_classes)
-print(f"Images Shape: {batch[0].shape}")  # Should be (batch_size, 150, 150, 3)
+print("Class weights:", class_weights)
 
 # Transfer Learning with VGG16
-strategy = tf.distribute.MirroredStrategy()  # Enables multi-GPU support
+base_model = VGG16(weights='imagenet', include_top=False, input_shape=(150, 150, 3))
+base_model.trainable = False  # Freeze the base model
 
-with strategy.scope():
-    base_model = VGG16(weights='imagenet', include_top=False, input_shape=(150, 150, 3))
-    base_model.trainable = False  # Freeze the base model
+model = Sequential([
+    base_model,
+    GlobalAveragePooling2D(),
+    Dense(512, activation='relu'),
+    Dropout(0.5),
+    Dense(256, activation='relu'),
+    Dropout(0.5),
+    Dense(3, activation='softmax')  # Ensure this matches the number of classes
+])
 
-    model = Sequential([
-        base_model,
-        GlobalAveragePooling2D(),
-        Dense(512, activation='relu'),
-        Dropout(0.5),
-        Dense(256, activation='relu'),
-        Dropout(0.5),
-        Dense(3, activation='softmax')
-    ])
+# Compile the Model
+model.compile(
+    optimizer=Adam(learning_rate=0.0001),
+    loss='categorical_crossentropy',
+    metrics=['accuracy']
+)
 
-    # Compile the Model
-    model.compile(
-        optimizer=Adam(learning_rate=0.0001),
-        loss='categorical_crossentropy',
-        metrics=['accuracy']
-    )
-
+# Define callbacks
 early_stopping = EarlyStopping(
     monitor='val_accuracy',
     patience=10,
@@ -99,12 +107,11 @@ early_stopping = EarlyStopping(
 
 reduce_lr = ReduceLROnPlateau(
     monitor='val_loss',
-    factor=0.2,  # Reduce learning rate by a factor of 0.2
-    patience=5,  # Wait for 5 epochs before reducing learning rate
-    min_lr=0.00001  # Minimum learning rate
+    factor=0.2,
+    patience=5,
+    min_lr=0.00001
 )
 
-# Learning rate scheduler
 def lr_scheduler(epoch, lr):
     if epoch < 10:
         return lr
@@ -119,7 +126,7 @@ history = model.fit(
     validation_data=test_set,
     epochs=2,
     callbacks=[early_stopping, reduce_lr, lr_callback],
-    class_weight=class_weights  # Added class weights
+    class_weight=class_weights
 )
 
 # Evaluate the Model
@@ -132,12 +139,11 @@ for layer in base_model.layers[:-10]:  # Unfreeze the last 10 layers
     layer.trainable = False
 
 # Recompile the model with a lower learning rate
-with strategy.scope():
-    model.compile(
-        optimizer=Adam(learning_rate=1e-5),  # Very low learning rate for fine-tuning
-        loss='categorical_crossentropy',
-        metrics=['accuracy']
-    )
+model.compile(
+    optimizer=Adam(learning_rate=1e-5),  # Very low learning rate for fine-tuning
+    loss='categorical_crossentropy',
+    metrics=['accuracy']
+)
 
 # Train the model again (Fine-Tuning)
 history_fine = model.fit(
@@ -148,8 +154,10 @@ history_fine = model.fit(
     class_weight=class_weights
 )
 
-model.save('my_image_classifier_model_finetuned.keras')
+# Save the model
+model.save('my_image_classifier_model_finetuned-3.keras')
 
+# Test the model on a single image
 test_image = image.load_img('img_1.png', target_size=(150, 150))
 test_image = image.img_to_array(test_image)
 test_image = np.expand_dims(test_image, axis=0)
