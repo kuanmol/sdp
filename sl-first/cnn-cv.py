@@ -2,26 +2,25 @@ import numpy as np
 import cv2
 from matplotlib import pyplot as plt
 
-def add_noise(image):
-    """Adds random Gaussian noise to an image (handles uint8 format)."""
+def add_noise(image, sigma=50):
+    """Adds stronger Gaussian noise to an image (handles uint8 format)."""
     row, col, ch = image.shape
     mean = 0
-    sigma = 25  # Adjust noise intensity (for uint8 scale: 0-255)
 
     gauss = np.random.normal(mean, sigma, (row, col, ch)).astype(np.int16)
     noisy = np.clip(image.astype(np.int16) + gauss, 0, 255).astype(np.uint8)  # Ensure valid range
     return noisy
 
-def add_haze(image, haze_factor=0.5):
-    """Adds synthetic haze to an image."""
+def add_haze(image, haze_factor=0.7):
+    """Adds stronger synthetic haze to an image."""
     haze = np.full_like(image, 255, dtype=np.uint8)  # White haze overlay
     hazy_image = cv2.addWeighted(image, (1 - haze_factor), haze, haze_factor, 0)
     return hazy_image
 
 def apply_noise_and_haze(image):
-    """Applies both noise and haze to the image."""
-    image = add_noise(image)  # First add noise
-    image = add_haze(image, haze_factor=0.5)  # Then add haze
+    """Applies both stronger noise and haze to the image."""
+    image = add_noise(image, sigma=50)  # Increased noise
+    image = add_haze(image, haze_factor=0.7)  # Increased haze
     return image
 
 # Load Image from Path
@@ -44,7 +43,7 @@ plt.axis("off")
 
 plt.subplot(1, 2, 2)
 plt.imshow(processed_image)
-plt.title("Processed Image (Noise + Haze)")
+plt.title("Processed Image (Increased Noise + Haze)")
 plt.axis("off")
 
 plt.show()
