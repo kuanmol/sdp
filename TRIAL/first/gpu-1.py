@@ -1,10 +1,6 @@
-from keras_preprocessing import image
-from keras.api.models import load_model
 import numpy as np
-import tensorflow as tf
-
-
-from keras_preprocessing.image import ImageDataGenerator
+from keras.api.models import load_model
+from keras_preprocessing import image
 
 loaded_model = load_model('my_image_classifier_model.keras')
 

@@ -1,14 +1,14 @@
 import numpy as np
 import tensorflow as tf
-from keras_preprocessing import image
-from keras_preprocessing.image import ImageDataGenerator
-from keras.api.layers import Dense, GlobalAveragePooling2D, Dropout
-from keras.api.models import Sequential
+from PIL import ImageFile
 from keras.api.applications import VGG16
 from keras.api.callbacks import EarlyStopping, ReduceLROnPlateau, LearningRateScheduler
+from keras.api.layers import Dense, GlobalAveragePooling2D, Dropout
+from keras.api.models import Sequential
 from keras.api.optimizers import Adam
+from keras_preprocessing import image
+from keras_preprocessing.image import ImageDataGenerator
 from sklearn.utils import class_weight
-from PIL import ImageFile
 
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 

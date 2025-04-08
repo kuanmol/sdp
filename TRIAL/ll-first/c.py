@@ -1,13 +1,13 @@
+import cv2
 import numpy as np
 import tensorflow as tf
-import cv2
-from keras_preprocessing import image
 from PIL import ImageFile
+from keras_preprocessing import image
 
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 
 # Load the trained model (replace with the path to your model)
-cnn = tf.keras.models.load_model('dog_human_cat_classifier_vgg16.h5')
+cnn = tf.keras.models.load_model('my_image_classifier_model.keras')
 
 # Initialize the camera
 cap = cv2.VideoCapture(0)
@@ -25,7 +25,7 @@ while True:
     if key == ord('c'):
         # Process the captured image
         test_image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        test_image_resized = cv2.resize(test_image, (150, 150))
+        test_image_resized = cv2.resize(test_image, (128, 128))
         test_image_resized = image.img_to_array(test_image_resized)
         test_image_resized = np.expand_dims(test_image_resized, axis=0)
         test_image_resized = test_image_resized / 255.0  # Rescale the image

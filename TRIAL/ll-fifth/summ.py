@@ -1,11 +1,11 @@
+import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
+from PIL import Image
+from sklearn.utils import class_weight
 from torch.utils.data import DataLoader
 from torchvision import datasets, transforms, models
-import numpy as np
-from sklearn.utils import class_weight
-from PIL import Image
 
 # Check if CUDA is available
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")

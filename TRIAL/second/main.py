@@ -1,8 +1,8 @@
 import numpy as np
 import tensorflow as tf
+from PIL import ImageFile
 from keras_preprocessing import image
 from keras_preprocessing.image import ImageDataGenerator
-from PIL import ImageFile
 
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 

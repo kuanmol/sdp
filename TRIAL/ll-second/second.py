@@ -1,4 +1,3 @@
-from keras.api.models import Sequential
 from PIL import ImageFile
 from keras.api.applications import VGG16
 from keras.api.callbacks import EarlyStopping, ReduceLROnPlateau
