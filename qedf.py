@@ -22,7 +22,7 @@ def add_noise(image, noise_type="gaussian", mean=0, var=20):
 
 
 # Load image
-image_path = "D:/sdp/test/img_13.png"
+image_path = "D:/sdp/test/img_7.png"
 image = cv2.imread(image_path)
 
 # Apply haze and noise
@@ -30,10 +30,11 @@ hazed = add_haze(image, intensity=0.4)
 hazed_noisy = add_noise(hazed, var=30)
 
 # Save result
-output_path = "output_hazed_noisy.jpg"
+output_path = "human.jpg"
 cv2.imwrite(output_path, hazed_noisy)
 
 # Optionally display
 # cv2.imshow("Hazed & Noisy", hazed_noisy)
 # cv2.waitKey(0)
 # cv2.destroyAllWindows()
+

@@ -15,6 +15,7 @@ cap.set(4, 480)  # Height
 while True:
     ret, frame = cap.read()
 
+
     cv2.imshow('Camera', frame)
 
     key = cv2.waitKey(1) & 0xFF
